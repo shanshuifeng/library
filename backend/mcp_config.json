@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "book-manager": {
+      "command": "python",
+      "args": ["backend/mcp_server.py"],
+      "cwd": "D:\\PyCharmProject\\book-manager",
+      "env": {
+        "API_BASE_URL": "http://localhost:5000/api/v1"
+      }
+    }
+  }
+}

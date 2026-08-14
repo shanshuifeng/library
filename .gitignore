@@ -1,0 +1,29 @@
+# 环境变量文件
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env.*.local
+.idea
+
+# 备份、示例文件不用忽略，方便他人参考
+# !.env.example
+# !.env.template
+/backend/logs/
+/backend/.env
+/.venv
+/.claude
+
+# Python 缓存与测试产物
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+
+# 前端依赖与构建产物
+node_modules/
+frontend/dist/
+
+# 运行时上传文件
+/backend/app/uploads/
