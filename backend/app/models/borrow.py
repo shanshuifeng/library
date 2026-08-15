@@ -24,51 +24,54 @@ class BorrowRecord(db.Model):
     return_date = db.Column(db.Date, nullable=True)
     renew_count = db.Column(db.Integer, default=0)
     fine = db.Column(db.Numeric(10, 2), default=0)
-    status = db.Column(db.String(10), default='borrowed', nullable=False)  # borrowed/returned/overdue
+    status = db.Column(db.String(10), default='borrowed', nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
+
+    @staticmethod
+    def _to_date(dt):
+        """统一把 datetime 转成 date"""
+        if isinstance(dt, datetime):
+            return dt.date()
+        return dt
 
     @property
     def is_overdue(self):
         """是否逾期"""
         if self.status == 'returned':
             return False
-        return date.today() > self.due_date
+        due = self._to_date(self.due_date)
+        return date.today() > due
 
     @property
     def days_overdue(self):
         """逾期天数"""
-        if not self.is_overdue:
+        if self.status == 'returned' or not self.is_overdue:
             return 0
-        return (date.today() - self.due_date).days
+        due = self._to_date(self.due_date)
+        return (date.today() - due).days
 
     @property
     def remaining_days(self):
-        """剩余借阅天数"""
+        """剩余天数"""
         if self.status == 'returned':
             return 0
-        remaining = (self.due_date - date.today()).days
+        due = self._to_date(self.due_date)
+        remaining = (due - date.today()).days
         return max(0, remaining)
 
     @classmethod
     def calculate_fine(cls, due_date, return_date=None):
-        """
-        计算逾期罚款
-
-        Args:
-            due_date: 到期日期
-            return_date: 归还日期（None 表示未归还）
-
-        Returns:
-            罚款金额
-        """
+        """计算逾期罚款"""
         if return_date is None:
             return_date = date.today()
+
+        due_date = cls._to_date(due_date)
+        return_date = cls._to_date(return_date)
 
         if return_date <= due_date:
             return 0
 
         overdue_days = (return_date - due_date).days
-        # 每天罚款 0.1 元
         return overdue_days * 0.1
 
     def to_dict(self):

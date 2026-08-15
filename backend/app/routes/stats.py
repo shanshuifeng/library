@@ -129,8 +129,8 @@ class DailyTrend(Resource):
             BorrowRecord.return_date
         ).all()
 
-        borrow_dict = {str(row[0]): row[1] for row in borrow_counts}
-        return_dict = {str(row[0]): row[1] for row in return_counts}
+        borrow_dict = {str(row[0].date() if hasattr(row[0], 'date') else row[0]): row[1] for row in borrow_counts}
+        return_dict = {str(row[0].date() if hasattr(row[0], 'date') else row[0]): row[1] for row in return_counts}
 
         dates = []
         borrows = []
