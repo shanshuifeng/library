@@ -9,6 +9,7 @@ from .system_config import SystemConfig
 from .reservation import Reservation
 from .permission import Permission, Role
 from .audit import AuditLog, AccessLog
+from .review import BookReview
 
 __all__ = ['User', 'Book', 'Category', 'BorrowRecord', 'SystemConfig', 'Reservation',
-           'Permission', 'Role', 'AuditLog', 'AccessLog']
+           'Permission', 'Role', 'AuditLog', 'AccessLog', 'BookReview']

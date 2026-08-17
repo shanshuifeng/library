@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getBookDetail } from '@/api/book'
+import { getBookDetail, getBookReviews, addBookReview, getBookRating } from '@/api/book'
 import { borrowBook } from '@/api/borrow'
 import { createReservation } from '@/api/reservation'
 import { useUserStore } from '@/store/user'
@@ -15,6 +15,19 @@ const userStore = useUserStore()
 const loading = ref(false)
 const borrowing = ref(false)
 const book = ref({})
+
+// ===== 读者评价相关 =====
+const ratingSummary = ref({ avg_rating: 0, review_count: 0, distribution: {} })
+const reviews = ref([])
+const reviewsTotal = ref(0)
+const reviewsPage = ref(1)
+const reviewsPages = ref(1)
+const reviewsPerPage = 10
+const reviewsLoading = ref(false)
+
+const myRating = ref(0)
+const myContent = ref('')
+const submittingReview = ref(false)
 
 // Mock 详情数据（按 id 给出合理内容）
 function mockDetail(id) {
@@ -90,7 +103,57 @@ async function handleReserve() {
   } catch { /* 已提示 */ }
 }
 
-onMounted(loadDetail)
+// ===== 读者评价 =====
+async function loadRating() {
+  try {
+    const res = await getBookRating(route.params.id)
+    ratingSummary.value = res.data || { avg_rating: 0, review_count: 0, distribution: {} }
+  } catch { /* 评分缺失不影响主流程 */ }
+}
+
+async function loadReviews(page = 1) {
+  reviewsLoading.value = true
+  reviewsPage.value = page
+  try {
+    const res = await getBookReviews(route.params.id, { page, per_page: reviewsPerPage })
+    reviews.value = res.data.items || []
+    reviewsTotal.value = res.data.total || 0
+    reviewsPages.value = res.data.pages || 1
+  } catch { /* 已提示 */ }
+  finally {
+    reviewsLoading.value = false
+  }
+}
+
+async function submitReview() {
+  if (!userStore.isLoggedIn) {
+    ElMessage.warning('请先登录后再评价')
+    router.push({ path: '/login', query: { redirect: route.fullPath } })
+    return
+  }
+  if (!myRating.value) {
+    ElMessage.warning('请先选择评分（1~5 星）')
+    return
+  }
+  try {
+    submittingReview.value = true
+    await addBookReview(book.value.id, { rating: myRating.value, content: myContent.value })
+    ElMessage.success('评价成功，感谢你的分享！')
+    myContent.value = ''
+    // 刷新评分汇总与列表
+    await loadRating()
+    await loadReviews(1)
+  } catch { /* 拦截器已提示 */ }
+  finally {
+    submittingReview.value = false
+  }
+}
+
+onMounted(() => {
+  loadDetail()
+  loadRating()
+  loadReviews(1)
+})
 </script>
 
 <template>
@@ -160,6 +223,68 @@ onMounted(loadDetail)
         </div>
       </div>
     </el-card>
+
+    <!-- 读者评价 -->
+    <el-card shadow="never" class="mt-20" v-loading="reviewsLoading">
+      <template #header>
+        <div class="review-header">
+          <span class="review-title">读者评价</span>
+          <div class="rating-summary">
+            <el-rate :model-value="ratingSummary.avg_rating" disabled show-score score-template="{value} 分" />
+            <span class="review-count">（{{ ratingSummary.review_count }} 人评价）</span>
+          </div>
+        </div>
+      </template>
+
+      <!-- 写评价 -->
+      <div v-if="userStore.isLoggedIn" class="review-editor">
+        <div class="editor-row">
+          <span class="editor-label">我的评分：</span>
+          <el-rate v-model="myRating" :max="5" show-score score-template="{value} 分" />
+        </div>
+        <el-input
+          v-model="myContent"
+          type="textarea"
+          :rows="3"
+          maxlength="1000"
+          show-word-limit
+          placeholder="写下你对这本书的看法（选填）"
+        />
+        <div class="editor-actions">
+          <el-button type="primary" :loading="submittingReview" @click="submitReview">
+            提交评价
+          </el-button>
+        </div>
+      </div>
+      <el-alert v-else type="info" :closable="false" class="login-tip">
+        登录后即可发表评价与评分
+      </el-alert>
+
+      <el-divider v-if="userStore.isLoggedIn" />
+
+      <!-- 评价列表 -->
+      <div v-if="reviews.length" class="review-list">
+        <div v-for="item in reviews" :key="item.id" class="review-item">
+          <div class="review-item-head">
+            <span class="reviewer">{{ item.real_name || item.username }}</span>
+            <el-rate :model-value="item.rating" disabled size="small" />
+            <span class="review-time">{{ formatDate(item.created_at) }}</span>
+          </div>
+          <p v-if="item.content" class="review-content">{{ item.content }}</p>
+        </div>
+
+        <el-pagination
+          v-if="reviewsPages > 1"
+          class="review-pager"
+          layout="prev, pager, next"
+          :total="reviewsTotal"
+          :page-size="reviewsPerPage"
+          :current-page="reviewsPage"
+          @current-change="loadReviews"
+        />
+      </div>
+      <el-empty v-else description="暂无评价，快来抢沙发吧~" :image-size="80" />
+    </el-card>
   </div>
 </template>
 
@@ -214,6 +339,108 @@ onMounted(loadDetail)
 
 .mb-20 {
   margin-bottom: 20px;
+}
+
+.mt-20 {
+  margin-top: 20px;
+}
+
+.review-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.review-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.rating-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.review-count {
+  color: #909399;
+  font-size: 13px;
+}
+
+.review-editor {
+  background: #fafafa;
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.editor-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.editor-label {
+  color: #606266;
+  font-size: 14px;
+}
+
+.editor-actions {
+  margin-top: 12px;
+  text-align: right;
+}
+
+.login-tip {
+  margin-bottom: 0;
+}
+
+.review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.review-item {
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.review-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.review-item-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.reviewer {
+  font-weight: 600;
+  color: #303133;
+}
+
+.review-time {
+  margin-left: auto;
+  color: #c0c4cc;
+  font-size: 12px;
+}
+
+.review-content {
+  color: #606266;
+  line-height: 1.7;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.review-pager {
+  justify-content: center;
+  margin-top: 8px;
 }
 
 @media (max-width: 768px) {

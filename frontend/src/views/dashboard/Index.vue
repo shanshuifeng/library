@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ArrowRight } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
 import { getOverview, getDailyTrend } from '@/api/stats'
@@ -13,11 +14,45 @@ const loading = ref(false)
 const isMock = ref(false)
 
 const cards = computed(() => [
-  { title: '图书总数', value: stats.value.bookCount, icon: 'Reading', color: '#409eff' },
-  { title: '借阅总数', value: stats.value.borrowCount, icon: 'Tickets', color: '#67c23a' },
-  { title: '注册用户', value: stats.value.userCount, icon: 'UserFilled', color: '#e6a23c' },
-  { title: '逾期未还', value: stats.value.overdueCount, icon: 'Warning', color: '#f56c6c' }
+  {
+    title: '图书总数',
+    value: stats.value.bookCount,
+    icon: 'Reading',
+    color: '#409eff',
+    path: userStore.isAdmin ? '/admin/books' : '/books',
+    desc: '查看全部图书'
+  },
+  {
+    title: '借阅总数',
+    value: stats.value.borrowCount,
+    icon: 'Tickets',
+    color: '#67c23a',
+    path: userStore.isAdmin ? '/admin/borrows' : '/borrow/my',
+    desc: userStore.isAdmin ? '管理借阅记录' : '查看我的借阅'
+  },
+  {
+    title: '注册用户',
+    value: stats.value.userCount,
+    icon: 'UserFilled',
+    color: '#e6a23c',
+    path: '/admin/users',
+    desc: '管理读者账号',
+    adminOnly: true
+  },
+  {
+    title: '逾期未还',
+    value: stats.value.overdueCount,
+    icon: 'Warning',
+    color: '#f56c6c',
+    path: userStore.isAdmin ? '/admin/borrows?tab=overdue' : '/borrow/my?tab=overdue',
+    desc: userStore.isAdmin ? '处理逾期记录' : '查看我的逾期'
+  }
 ])
+
+function handleCardClick(card) {
+  if (card.adminOnly && !userStore.isAdmin) return
+  router.push(card.path)
+}
 
 const quickEntries = computed(() => {
   const common = [
@@ -138,10 +173,21 @@ onBeforeUnmount(() => {
       class="mb-20"
     />
 
-    <!-- 统计卡片 -->
+    <!-- 统计卡片（可点击跳转） -->
     <el-row :gutter="20" class="stat-row">
-      <el-col v-for="card in cards" :key="card.title" :xs="12" :sm="12" :md="6">
-        <el-card shadow="hover" class="stat-card">
+      <el-col
+        v-for="card in cards"
+        :key="card.title"
+        :xs="12"
+        :sm="12"
+        :md="6"
+      >
+        <el-card
+          shadow="hover"
+          class="stat-card stat-card--interactive"
+          :class="{ 'stat-card--disabled': card.adminOnly && !userStore.isAdmin }"
+          @click="handleCardClick(card)"
+        >
           <div class="stat-card-body">
             <div class="stat-icon" :style="{ backgroundColor: card.color }">
               <el-icon :size="28"><component :is="card.icon" /></el-icon>
@@ -149,7 +195,9 @@ onBeforeUnmount(() => {
             <div class="stat-info">
               <div class="stat-value">{{ card.value }}</div>
               <div class="stat-title">{{ card.title }}</div>
+              <div class="stat-hint">{{ card.desc }}</div>
             </div>
+            <el-icon v-if="!(card.adminOnly && !userStore.isAdmin)" class="stat-arrow" :size="16"><ArrowRight /></el-icon>
           </div>
         </el-card>
       </el-col>
@@ -206,12 +254,33 @@ onBeforeUnmount(() => {
 
 .stat-card {
   margin-bottom: 20px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card--interactive {
+  cursor: pointer;
+}
+
+.stat-card--interactive:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.stat-card--disabled:hover {
+  transform: none;
+  box-shadow: var(--el-box-shadow-light);
 }
 
 .stat-card-body {
   display: flex;
   align-items: center;
   gap: 16px;
+  position: relative;
 }
 
 .stat-icon {
@@ -234,6 +303,31 @@ onBeforeUnmount(() => {
   font-size: 14px;
   color: #909399;
   margin-top: 4px;
+}
+
+.stat-hint {
+  font-size: 12px;
+  color: #c0c4cc;
+  margin-top: 2px;
+  transition: color 0.2s;
+}
+
+.stat-card--interactive:hover .stat-hint {
+  color: #409eff;
+}
+
+.stat-arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #c0c4cc;
+  transition: transform 0.2s, color 0.2s;
+}
+
+.stat-card--interactive:hover .stat-arrow {
+  color: #409eff;
+  transform: translateY(-50%) translateX(3px);
 }
 
 .quick-card {

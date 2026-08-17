@@ -5,13 +5,14 @@ import os
 import uuid
 from flask import request, current_app
 from flask_restx import Namespace, Resource, fields, reqparse, inputs
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.utils import secure_filename
 
 from ..utils.response import success_response, error_response, paginate_response
 from ..utils.auth import admin_required
 from ..utils.audit import log_audit
 from ..services import book_service
+from ..services import review_service
 
 
 def check_image_type(file_data):
@@ -114,6 +115,11 @@ stock_warning_model = ns.model('StockWarning', {
     'id': fields.Integer(description='图书ID'),
     'title': fields.String(description='书名'),
     'stock': fields.Integer(description='当前库存')
+})
+
+review_create_model = ns.model('BookReviewCreate', {
+    'rating': fields.Integer(required=True, description='评分（1~5 星）', example=5),
+    'content': fields.String(description='评价内容（可选，最长 1000 字）', example='内容详实，受益匪浅')
 })
 
 
@@ -287,6 +293,84 @@ class BookDetail(Resource):
         )
 
         return success_response(message='图书删除成功')
+
+
+# ===== 图书评价路由 =====
+
+@ns.route('/<int:book_id>/reviews')
+class BookReviewList(Resource):
+    """图书评价"""
+
+    @ns.doc('获取图书评价列表', security='Bearer')
+    @ns.expect(ns.parser()
+        .add_argument('page', type=int, help='页码（默认1）', location='args')
+        .add_argument('per_page', type=int, help='每页数量（默认10）', location='args')
+    )
+    @ns.response(404, '图书不存在')
+    def get(self, book_id):
+        """获取某图书的评价列表（分页，按时间倒序）"""
+        book = book_service.get_book_by_id(book_id)
+        if not book:
+            ns.abort(404, '图书不存在')
+
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+
+        pagination = review_service.get_book_reviews(book_id, page=page, per_page=per_page)
+
+        return success_response(data={
+            'items': [r.to_dict() for r in pagination.items],
+            'total': pagination.total,
+            'page': page,
+            'per_page': per_page,
+            'pages': pagination.pages
+        })
+
+    @ns.doc('提交图书评价', security='Bearer')
+    @ns.expect(review_create_model)
+    @ns.response(400, '参数错误')
+    @ns.response(404, '图书不存在')
+    @jwt_required()
+    def post(self, book_id):
+        """提交/更新对图书的评价（每用户每书仅一条）"""
+        user_id = int(get_jwt_identity())
+        data = request.get_json() or {}
+
+        rating = data.get('rating')
+        content = data.get('content')
+
+        review, error = review_service.add_review(
+            user_id=user_id,
+            book_id=book_id,
+            rating=rating,
+            content=content
+        )
+
+        if error:
+            ns.abort(400, error)
+
+        return success_response(data=review.to_dict(), message='评价成功', code=201)
+
+
+@ns.route('/<int:book_id>/rating')
+class BookRating(Resource):
+    """图书评分汇总"""
+
+    @ns.doc('获取图书评分汇总', security='Bearer')
+    @ns.response(404, '图书不存在')
+    def get(self, book_id):
+        """获取图书的平均评分、评价数量与评分分布"""
+        book = book_service.get_book_by_id(book_id)
+        if not book:
+            ns.abort(404, '图书不存在')
+
+        distribution = review_service.get_rating_distribution(book_id)
+
+        return success_response(data={
+            'avg_rating': float(book.avg_rating) if book.avg_rating else 0,
+            'review_count': book.review_count or 0,
+            'distribution': distribution
+        })
 
 
 # ===== 分类路由 =====

@@ -36,3 +36,18 @@ export function uploadCover(file) {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
 }
+
+// 图书评价列表（分页）
+export function getBookReviews(id, params) {
+  return request({ url: `/books/${id}/reviews`, method: 'get', params })
+}
+
+// 提交图书评价（需登录）
+export function addBookReview(id, data) {
+  return request({ url: `/books/${id}/reviews`, method: 'post', data })
+}
+
+// 图书评分汇总（平均分 / 数量 / 分布）
+export function getBookRating(id) {
+  return request({ url: `/books/${id}/rating`, method: 'get' })
+}

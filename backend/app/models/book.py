@@ -22,11 +22,15 @@ class Book(db.Model):
     description = db.Column(db.Text, nullable=True)
     cover_image = db.Column(db.String(500), nullable=True)
     location = db.Column(db.String(100), nullable=True)  # 馆藏位置
+    avg_rating = db.Column(db.Numeric(3, 2), default=0, nullable=False)  # 平均评分（1~5）
+    review_count = db.Column(db.Integer, default=0, nullable=False)  # 评价数量
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
     # 关联：一本图书有多条借阅记录
     borrow_records = db.relationship('BorrowRecord', backref='book', lazy='dynamic')
+    # 关联：一本图书有多条评价
+    reviews = db.relationship('BookReview', backref='book', lazy='dynamic')
 
     @property
     def available_stock(self):
@@ -55,6 +59,8 @@ class Book(db.Model):
             'description': self.description,
             'cover_image': self.cover_image,
             'location': self.location,
+            'avg_rating': float(self.avg_rating) if self.avg_rating else 0,
+            'review_count': self.review_count or 0,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
