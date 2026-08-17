@@ -25,7 +25,7 @@ class Config:
     SECRET_KEY = get_required_env('SECRET_KEY', fallback_generate=True)
     SQLALCHEMY_DATABASE_URI = os.getenv(
         'DATABASE_URL',
-        'postgresql+psycopg://remote_user:NewPassword%40123@192.168.116.138:5432/book_manager'
+        'postgresql+psycopg://remote_user:NewPassword%40123@192.168.116.142:5432/book_manager'
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_POOL_SIZE = 10

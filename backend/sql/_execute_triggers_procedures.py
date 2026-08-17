@@ -9,7 +9,7 @@ import re
 import os
 
 DB_CONFIG = {
-    'host': '192.168.116.141',
+    'host': '192.168.116.142',
     'port': 5432,
     'dbname': 'book_manager',
     'user': 'remote_user',
