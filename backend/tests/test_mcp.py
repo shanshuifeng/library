@@ -4,6 +4,10 @@ MCP Server pytest 测试
 """
 import pytest
 import json
+import os
+
+_TEST_PWD = os.environ.get('TEST_PASSWORD', 'admin123')
+_WRONG_PWD = os.environ.get('TEST_WRONG_PASSWORD', 'wrong_password')
 
 
 class TestPublicAPI:
@@ -13,7 +17,7 @@ class TestPublicAPI:
         """登录成功"""
         resp = client.post('/api/v1/auth/login', json={
             'username': 'admin',
-            'password': 'admin123'
+            'password': _TEST_PWD
         })
         data = json.loads(resp.data)
         assert resp.status_code == 200
@@ -25,7 +29,7 @@ class TestPublicAPI:
         """登录密码错误"""
         resp = client.post('/api/v1/auth/login', json={
             'username': 'admin',
-            'password': 'wrong_password'
+            'password': _WRONG_PWD
         })
         assert resp.status_code == 401
 

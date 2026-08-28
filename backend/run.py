@@ -59,7 +59,7 @@ def create_admin():
 @app.cli.command('seed-data')
 def seed_data():
     """填充丰富的示例数据（开发用）"""
-    import random
+    from random import SystemRandom as _SecureRandom; random = _SecureRandom()
     from datetime import date, timedelta
     from app.utils.logger import get_logger
     logger = get_logger()

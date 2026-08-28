@@ -6,7 +6,7 @@
 """
 import psycopg
 
-DB = ('host=192.168.116.142 port=5432 dbname=book_manager '
+DB = ('host=192.168.116.141 port=5432 dbname=book_manager '
       'user=remote_user password=NewPassword@123 sslmode=prefer')
 SQL_FILE = 'test_all_objects.sql'
 

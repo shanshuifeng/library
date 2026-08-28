@@ -1,10 +1,13 @@
 """
 测试配置和 fixtures
 """
+import os
 import pytest
 from app import create_app
 from app.extensions import db as _db
 from app.models import User, Book, Category, BorrowRecord
+
+_TEST_PWD = os.environ.get('TEST_PASSWORD', 'admin123')
 
 
 @pytest.fixture(scope='session')
@@ -119,7 +122,7 @@ def admin_token(client, admin_user):
     """获取管理员 Token"""
     response = client.post('/api/v1/auth/login', json={
         'username': 'admin',
-        'password': 'admin123'
+        'password': _TEST_PWD
     })
     data = response.get_json()
     return data['data']['access_token']

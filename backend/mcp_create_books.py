@@ -3,8 +3,11 @@
 """
 import asyncio
 import json
+import os
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+
+_TEST_PWD = os.environ.get('TEST_PASSWORD', 'admin123')
 
 
 server_params = StdioServerParameters(
@@ -51,7 +54,7 @@ async def create_books():
             print("\n[1] 登录获取 Token...")
             result = await session.call_tool("login", arguments={
                 "username": "admin",
-                "password": "admin123"
+                "password": _TEST_PWD
             })
             login_data = json.loads(result.content[0].text)
 

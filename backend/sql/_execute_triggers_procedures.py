@@ -9,11 +9,11 @@ import re
 import os
 
 DB_CONFIG = {
-    'host': '192.168.116.142',
-    'port': 5432,
-    'dbname': 'book_manager',
-    'user': 'remote_user',
-    'password': 'NewPassword@123',
+    'host': os.getenv('DB_HOST', '192.168.116.141'),
+    'port': int(os.getenv('DB_PORT', '5432')),
+    'dbname': os.getenv('DB_NAME', 'book_manager'),
+    'user': os.getenv('DB_USER', 'remote_user'),
+    'password': os.getenv('DB_PASSWORD', ''),
     'sslmode': 'prefer',
     'connect_timeout': 10,
 }

@@ -4,8 +4,13 @@ MCP Client 测试脚本
 """
 import asyncio
 import json
+import os
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+
+_TEST_PWD = os.environ.get('TEST_PASSWORD', 'admin123')
+_WRONG_PWD = os.environ.get('TEST_WRONG_PASSWORD', 'wrong_password')
+_REG_PWD = os.environ.get('TEST_REG_PASSWORD', 'test123456')
 
 
 # MCP Server 配置
@@ -41,7 +46,7 @@ async def test_mcp_server():
             print("=" * 60)
             result = await session.call_tool("login", arguments={
                 "username": "admin",
-                "password": "admin123"
+                "password": _TEST_PWD
             })
             print(f"登录结果: {result.content[0].text[:200]}...")
 
@@ -122,7 +127,7 @@ async def test_without_token():
             print("\n[1] 测试登录（不需要 Token）")
             result = await session.call_tool("login", arguments={
                 "username": "admin",
-                "password": "wrong_password"
+                "password": _WRONG_PWD
             })
             print(f"登录结果: {result.content[0].text[:200]}...")
 
@@ -130,7 +135,7 @@ async def test_without_token():
             print("\n[2] 测试注册（不需要 Token）")
             result = await session.call_tool("register", arguments={
                 "username": "test_user",
-                "password": "test123456"
+                "password": _REG_PWD
             })
             print(f"注册结果: {result.content[0].text[:200]}...")
 
