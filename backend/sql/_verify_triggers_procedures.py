@@ -5,7 +5,7 @@
 import psycopg
 
 conn = psycopg.connect(
-    'host=192.168.116.142 port=5432 dbname=book_manager '
+    'host=192.168.116.141 port=5432 dbname=book_manager '
     'user=remote_user password=NewPassword@123 sslmode=prefer'
 )
 cur = conn.cursor()

@@ -4,21 +4,17 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock, Message } from '@element-plus/icons-vue'
 import { register } from '@/api/auth'
-import { ROLE_OPTIONS } from '@/utils'
 
 const router = useRouter()
 const formRef = ref()
 const loading = ref(false)
 
-// 自注册仅允许学生/教师，不允许直接注册管理员
-const roleOptions = ROLE_OPTIONS.filter((o) => o.value !== 'admin')
-
+// 新用户注册统一为学生角色（后端强制 role='student'，前端不提供角色选择）
 const form = reactive({
   username: '',
   password: '',
   confirmPassword: '',
-  email: '',
-  role: 'student'
+  email: ''
 })
 
 const validateConfirm = (rule, value, callback) => {
@@ -42,8 +38,7 @@ const rules = {
     { required: true, message: '请确认密码', trigger: 'blur' },
     { validator: validateConfirm, trigger: 'blur' }
   ],
-  email: [{ type: 'email', message: '邮箱格式不正确', trigger: 'blur' }],
-  role: [{ required: true, message: '请选择身份', trigger: 'change' }]
+  email: [{ type: 'email', message: '邮箱格式不正确', trigger: 'blur' }]
 }
 
 async function handleRegister() {
@@ -98,16 +93,6 @@ async function handleRegister() {
           </el-form-item>
           <el-form-item prop="email">
             <el-input v-model="form.email" placeholder="邮箱（选填）" :prefix-icon="Message" />
-          </el-form-item>
-          <el-form-item prop="role">
-            <el-select v-model="form.role" placeholder="选择身份" style="width: 100%">
-              <el-option
-                v-for="opt in roleOptions"
-                :key="opt.value"
-                :label="opt.label"
-                :value="opt.value"
-              />
-            </el-select>
           </el-form-item>
           <el-button
             type="primary"
