@@ -2,6 +2,7 @@
 认证服务层
 """
 from ..models.user import User
+from ..models.permission import Role
 from ..extensions import db
 
 
@@ -74,6 +75,13 @@ def register_user(username, password, email=None, phone=None,
     user.set_password(password)
 
     db.session.add(user)
+
+    # 分配默认角色：权限系统通过 user_roles 关联表判断权限，
+    # 仅设置 role 字符串字段不会让新用户获得任何菜单权限。
+    role_obj = Role.query.filter_by(name=role).first()
+    if role_obj:
+        user.roles.append(role_obj)
+
     db.session.commit()
 
     return user, None

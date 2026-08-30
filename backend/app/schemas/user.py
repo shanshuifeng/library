@@ -25,6 +25,9 @@ class UserLoginSchema(Schema):
 
 class UserRegisterSchema(Schema):
     """用户注册 Schema"""
+    class Meta:
+        unknown = 'exclude'
+
     username = fields.String(required=True, validate=[
         validate.Length(min=2, max=50, error='用户名长度应为2-50个字符')
     ])
@@ -44,7 +47,7 @@ class UserRegisterSchema(Schema):
     ])
 
     @validates('phone')
-    def validate_phone(self, value):
+    def validate_phone(self, value, **kwargs):
         """校验手机号格式"""
         if value and not re.match(r'^1[3-9]\d{9}$', value):
             raise ValidationError('手机号格式不正确')
@@ -73,7 +76,7 @@ class UserUpdateSchema(Schema):
     ])
 
     @validates('phone')
-    def validate_phone(self, value):
+    def validate_phone(self, value, **kwargs):
         """校验手机号格式"""
         if value and not re.match(r'^1[3-9]\d{9}$', value):
             raise ValidationError('手机号格式不正确')
@@ -101,7 +104,7 @@ class UserProfileUpdateSchema(Schema):
     ])
 
     @validates('phone')
-    def validate_phone(self, value):
+    def validate_phone(self, value, **kwargs):
         """校验手机号格式"""
         if value and not re.match(r'^1[3-9]\d{9}$', value):
             raise ValidationError('手机号格式不正确')

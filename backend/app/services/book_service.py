@@ -32,9 +32,9 @@ def get_book_list(page=1, per_page=20, keyword=None, category_id=None):
             )
         )
 
-    # 分类筛选
+    # 分类筛选（父分类需包含其所有子分类下的图书）
     if category_id:
-        query = query.filter_by(category_id=category_id)
+        query = query.filter(Book.category_id.in_(_collect_category_ids(category_id)))
 
     # 按创建时间降序排列
     query = query.order_by(Book.created_at.desc())
@@ -53,6 +53,14 @@ def get_book_by_id(book_id):
         Book 对象或 None
     """
     return Book.query.get(book_id)
+
+
+def _collect_category_ids(category_id):
+    """收集分类及其所有子孙分类的 ID（按父分类筛选时包含子分类图书）"""
+    ids = [category_id]
+    for child in Category.query.filter_by(parent_id=category_id).all():
+        ids.extend(_collect_category_ids(child.id))
+    return ids
 
 
 def create_book(data):

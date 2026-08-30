@@ -47,12 +47,18 @@ request.interceptors.response.use(
     const isDev = import.meta.env.DEV
 
     if (status === 401) {
-      // 登录态失效：清除凭证并跳转登录页
-      localStorage.removeItem(TOKEN_KEY)
-      localStorage.removeItem(USER_KEY)
-      ElMessage.error('登录已过期，请重新登录')
-      if (router.currentRoute.value.path !== '/login') {
-        router.push('/login')
+      // 登录接口返回 401 表示「登录失败」（密码错误/用户不存在/账号禁用），
+      // 并非 token 失效，应显示后端返回的具体原因
+      if (error.config?.url?.includes('/auth/login')) {
+        ElMessage.error(message || '登录失败')
+      } else {
+        // 登录态失效：清除凭证并跳转登录页
+        localStorage.removeItem(TOKEN_KEY)
+        localStorage.removeItem(USER_KEY)
+        ElMessage.error('登录已过期，请重新登录')
+        if (router.currentRoute.value.path !== '/login') {
+          router.push('/login')
+        }
       }
     } else if (status === 429) {
       ElMessage.error('请求过于频繁，请稍后再试')

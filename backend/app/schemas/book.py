@@ -39,7 +39,7 @@ class BookCreateSchema(Schema):
     ])
 
     @validates('isbn')
-    def validate_isbn(self, value):
+    def validate_isbn(self, value, **kwargs):
         """校验 ISBN 格式（支持 ISBN-10 和 ISBN-13）"""
         if value:
             # 移除连字符和空格
